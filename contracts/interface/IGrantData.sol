@@ -12,10 +12,12 @@ interface IGrantData {
         string ipfsHash;
     }
 
-    function getClaimList(uint256 _batch, address _user)
+    function getClaimData(uint256 _batch, address _user)
         external
         view
         returns (ClaimData memory);
 
     function addClaimData(uint256 _bacth, AddClaimData[] memory) external;
+
+    function getBatches() external view returns (uint256[] memory);
 }

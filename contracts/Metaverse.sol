@@ -18,10 +18,14 @@ contract Metaverse is
 
     address public grantData;
 
-    function initialize(address _grantData) external initializer {
-        grantData = _grantData;
+    function initialize() external initializer {
         __Ownable_init();
-        __ERC721_init("Liqee Bond", "LBD");
+        __ERC721_init("Liqee Card", "QCard");
+    }
+
+    function setGrantData(address _grantData) external onlyOwner {
+        require(grantData == address(0), "Metaverse: It has been set");
+        grantData = _grantData;
     }
 
     function mint(address _user, string memory _uri)

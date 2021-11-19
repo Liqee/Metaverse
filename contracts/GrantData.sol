@@ -14,12 +14,16 @@ contract GrantData is OwnableUpgradeable, IGrantData {
 
     uint256 public totalBatch;
 
+    mapping(uint256 => bool) private hasBatch;
+
+    uint256[] private batches;
+
     function initialize(address _metaverse) external initializer {
         metaverse = _metaverse;
         __Ownable_init();
     }
 
-    function getClaimList(uint256 _batch, address _user)
+    function getClaimData(uint256 _batch, address _user)
         public
         view
         override
@@ -29,6 +33,7 @@ contract GrantData is OwnableUpgradeable, IGrantData {
     }
 
     function claim(uint256 _batch) external returns (uint256 tokenId) {
+        require(hasBatch[_batch], "GrantData: No such batch");
         require(!data[_batch][msg.sender].claim, "GrantData: Already claim");
 
         data[_batch][msg.sender].claim = true;
@@ -44,12 +49,25 @@ contract GrantData is OwnableUpgradeable, IGrantData {
         override
         onlyOwner
     {
+        addBatch(_bacth);
         for (uint256 i = 0; i < _datas.length; i++) {
             AddClaimData memory _addClaimData = _datas[i];
             data[_bacth][_addClaimData.user] = ClaimData({
                 ipfsHash: _addClaimData.ipfsHash,
                 claim: false
             });
+        }
+    }
+
+    function getBatches() external view override returns (uint256[] memory) {
+        return batches;
+    }
+
+    function addBatch(uint256 _batch) private {
+        if (!hasBatch[_batch]) {
+            hasBatch[_batch] = true;
+            batches.push(_batch);
+            totalBatch += 1;
         }
     }
 }
