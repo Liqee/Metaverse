@@ -4,6 +4,8 @@ const { ethers } = require("hardhat");
 let proxyAdminAddress, metaverseProxyAddress, grantDataProxyAddress;
 const ipfsHash = "QmV7KjQwkHfLNcZ8hvG8CC1XWrdNRWVcrmVUKkvhsDk5Mx";
 
+const tokenId = 2;
+
 describe("All", () => {
   it("deploy", async () => {
     //deploy ProxyAdmin
@@ -43,7 +45,7 @@ describe("All", () => {
 
     //Set the address of GrantData in Metaverse
     metaverse = Metaverse.attach(metaverseProxy.address);
-    await metaverse.setGrantData(grantDataProxy.address);
+    await metaverse.addWhitelist(grantDataProxy.address);
   });
 
   it("Metaverse permission control", async () => {
@@ -69,7 +71,7 @@ describe("All", () => {
 
     const [owner] = await ethers.getSigners();
 
-    await grantData.addClaimData(1, [{ user: owner.address, ipfsHash: ipfsHash }]);
+    await grantData.addClaimData(1, [{ user: owner.address, ipfsHash: ipfsHash, tokenId: tokenId, amount: 1000 }]);
 
     const batches = await grantData.getBatches();
     expect(batches[0].toNumber()).to.eq(1);
@@ -92,10 +94,10 @@ describe("All", () => {
     const balanceOf = await metaverse.balanceOf(owner.address);
     expect(balanceOf.toNumber()).to.eq(1);
 
-    const ownerOf = await metaverse.ownerOf(balanceOf.toNumber());
+    const ownerOf = await metaverse.ownerOf(tokenId);
     expect(ownerOf).to.eq(owner.address);
 
-    const getURI = await metaverse.tokenURI(balanceOf.toNumber());
+    const getURI = await metaverse.tokenURI(tokenId);
     expect(getURI).to.eq("ipfs://" + ipfsHash);
   });
 });

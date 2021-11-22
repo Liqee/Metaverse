@@ -40,6 +40,7 @@ contract GrantData is OwnableUpgradeable, IGrantData {
         return
             IMetaverse(metaverse).mint(
                 msg.sender,
+                data[_batch][msg.sender].tokenId,
                 data[_batch][msg.sender].ipfsHash
             );
     }
@@ -54,6 +55,8 @@ contract GrantData is OwnableUpgradeable, IGrantData {
             AddClaimData memory _addClaimData = _datas[i];
             data[_bacth][_addClaimData.user] = ClaimData({
                 ipfsHash: _addClaimData.ipfsHash,
+                tokenId: _addClaimData.tokenId,
+                amount: _addClaimData.amount,
                 claim: false
             });
         }
@@ -61,6 +64,15 @@ contract GrantData is OwnableUpgradeable, IGrantData {
 
     function getBatches() external view override returns (uint256[] memory) {
         return batches;
+    }
+
+    function getAmount(uint256 _batch, address _user)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return data[_batch][_user].amount;
     }
 
     function addBatch(uint256 _batch) private {
