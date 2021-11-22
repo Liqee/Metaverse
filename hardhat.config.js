@@ -1,6 +1,8 @@
 require("@nomiclabs/hardhat-waffle");
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
+
+const privateKey = "";
+const alchemyKey = "";
+
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners();
 
@@ -17,4 +19,13 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  */
 module.exports = {
   solidity: "0.8.4",
+  networks:{
+    kovan: {
+      url: `https://eth-kovan.alchemyapi.io/v2/${alchemyKey}`,
+      accounts: [`0x${privateKey}`],
+      gas: 8000000,
+      gasPrice: 1000000000, // 1gWei
+      timeout: 200000,
+    },
+  }
 };

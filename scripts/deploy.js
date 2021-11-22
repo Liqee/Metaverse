@@ -43,7 +43,7 @@ async function main() {
 
   //Set the address of GrantData in Metaverse
   metaverse = Metaverse.attach(metaverseProxy.address);
-  await metaverse.setGrantData(grantDataProxy.address);
+  await metaverse.addWhitelist(grantDataProxy.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
