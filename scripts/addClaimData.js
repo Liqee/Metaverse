@@ -6,11 +6,11 @@
 const { ethers } = require("hardhat");
 
 //kovan
-const proxyAdminAddress = "0x209A9Dfc1e1bdd62bB33D7109D3223eF5C7D187C"
-const metaverseImplAddress = "0xf73932254090dab19700e5a2D61df2CCDE6fCC11"
-const metaverseProxyAddress = "0xa11FD3582E7E3D5C0d153dAb8DF4638712348AF4"
-const grantDataImplAddress = "0x79Fe4E29A3E4b28C901014F79Ef841100f657D81"
-const grantDataProxyAddress = "0xa57f691ACAdD44e3b71e977943938414dc90fB35"
+const proxyAdminAddress = "0xFE099743f0A989aE2b1565520e4f51f995D78E0C"
+const metaverseImplAddress = "0x84748A779fAf5A8E848D22Cc263b354BdBE6381C"
+const metaverseProxyAddress = "0xbb8A4E0e21a2c1979e26e30B8B57A8BB8950a788"
+const grantDataImplAddress = "0x199e09ECeD5e731796B60b42F9772EBCb2774877"
+const grantDataProxyAddress = "0x8332d42ED354Cb6A777008A9B6f12CB7A5aE5fa9"
 
 async function main() {
     const GrantData = await ethers.getContractFactory("GrantData");
@@ -23,28 +23,35 @@ async function main() {
         { user: "0xcc4a8886A0f8c1FFe4FDd84b47eaCeBB52236D23", ipfsHash: "QmdTbLbtj8m3dVFtKKeU6wvYndjHQxTDZzK8RwNxKVRxfu", tokenId: 4, amount: ethers.utils.parseEther("1.2345") },
         { user: "0xf0A7b79cF18A103b917aC232B03e0a16355c744d", ipfsHash: "QmWw8V3dxpWpPZpHANuCwxsR6erKSj76taGkLtPjqEmAju", tokenId: 5, amount: ethers.utils.parseEther("1.23456789012345") },
         { user: "0x3933B7D8097E03676D608bEA7a41Ece1D8B8d8C9", ipfsHash: "QmQbHpsaxrnojk68fjcLMuw8hY6kt7Nep2XMBK7uBGjUJ8", tokenId: 6, amount: ethers.utils.parseEther("12345.6789012345") },
-    ]);
-
-    await grantData.addClaimData(1, [
         { user: "0x05F8eeF8c1F229E5C0D65A30EF6dd96b026e2D13", ipfsHash: "QmQWbLPQ89yNcLHt9iA4d3ZJqfmoADENJG147iA9mYTWxr", tokenId: 7, amount: ethers.utils.parseEther("10000000") },
         { user: "0xec68E4a5baBBF31d1544e1afED71E879cd58B9F5", ipfsHash: "QmTLh5GbSWzyfjYpikhpf9noh1EJLT5iQdnE5KEfCZis8t", tokenId: 8, amount: ethers.utils.parseEther("10000000.00001") },
+    ]);
+
+    console.log("add first batches test data success");
+
+    await grantData.addClaimData(1, [
         { user: "0x09849240026E0131e386f8aA9720E3733AAf5574", ipfsHash: "QmYVhJe8mn5oHQBD2on5f3cyDwBrL7KrNcBqZcAuwdwbJC", tokenId: 9, amount: ethers.utils.parseEther("10000.123456789") },
         { user: "0xCf6B6D9CeDe701570c3C07E57B8D69B1cAe27F89", ipfsHash: "QmWJxpPUomAHndwCRxEwgbiZpudbYUEbq4cCqbytfWYTS1", tokenId: 10, amount: ethers.utils.parseEther("10000") },
         { user: "0xFA09b0FF56109D04447D118C78006b1Face422eb", ipfsHash: "QmXkB2cie8beHDTuTfTpRh7abBTCtjFDwonTTYpYL6jJfF", tokenId: 11, amount: ethers.utils.parseEther("10000") },
-        { user: "0x95E111E87847Cdb3E3e9Bf16607A36099115dEC7", ipfsHash: "QmcGNW2DBhzdHSDXiu72YRZgXKbEEHLef1cYAuHvJ3GVTS", tokenId: 12, amount: ethers.utils.parseEther("10000") }
-    ]);
-
-    await grantData.addClaimData(1, [
+        { user: "0x95E111E87847Cdb3E3e9Bf16607A36099115dEC7", ipfsHash: "QmcGNW2DBhzdHSDXiu72YRZgXKbEEHLef1cYAuHvJ3GVTS", tokenId: 12, amount: ethers.utils.parseEther("10000") },
         { user: "0xf957869f317D0cFE3a4F91E4f3425d6FE3048Fd0", ipfsHash: "QmbzsdBHKioT6jeLyU1dKFKKa8H875Ttfp5eMoFFYHzS7i", tokenId: 13, amount: ethers.utils.parseEther("10000") },
-        { user: "0x09849240026E0131e386f8aA9720E3733AAf5574", ipfsHash: "QmW31NiTWsR7T3jnAuxcC8QSwNB4EKsNwr3AVoQQQ5o3bm", tokenId: 14, amount: ethers.utils.parseEther("10000") },
         { user: "0xF67b7969c0e85fDD47A48c9514Be53FF10f4dBf1", ipfsHash: "QmQ2LUvA89rtSCYuLs4P7xKeE7j9XUzybouVNwmhrWD5Ne", tokenId: 15, amount: ethers.utils.parseEther("10000") },
         { user: "0xad0294eCEa33469e783230B49B8Df53bbc43d908", ipfsHash: "QmUsm1GswPhWVuxn6K9e6avTg7oCmsCZpdUfrqyGmG2dXk", tokenId: 16, amount: ethers.utils.parseEther("10000") },
         { user: "0xA89BC2a9FE859A9367010429aCcfF192bCA33891", ipfsHash: "QmeTAhxGs1fLXdfCv8MPSnyai9BS6TdtmMnZv58bezsTuz", tokenId: 18, amount: ethers.utils.parseEther("10000") }
     ]);
 
+    console.log("add no.2 batches test data success");
+
     await grantData.addBatches();
 
-    await grantData.addClaimData(2, [{ user: "0xad0294eCEa33469e783230B49B8Df53bbc43d908", ipfsHash: "QmYvZYxJwq3Ce2d9KT8yAMgGeJUu5LNoLsPmd1ndcUKrGo", tokenId: 17, amount: ethers.utils.parseEther("10000") }]);
+    console.log("add batches num");
+
+    await grantData.addClaimData(2, [
+        { user: "0xad0294eCEa33469e783230B49B8Df53bbc43d908", ipfsHash: "QmYvZYxJwq3Ce2d9KT8yAMgGeJUu5LNoLsPmd1ndcUKrGo", tokenId: 17, amount: ethers.utils.parseEther("10000") },
+        { user: "0x09849240026E0131e386f8aA9720E3733AAf5574", ipfsHash: "QmW31NiTWsR7T3jnAuxcC8QSwNB4EKsNwr3AVoQQQ5o3bm", tokenId: 14, amount: ethers.utils.parseEther("10000") }
+    ]);
+
+    console.log("add no.3 batches test data success");
 }
 
 // We recommend this pattern to be able to use async/await everywhere

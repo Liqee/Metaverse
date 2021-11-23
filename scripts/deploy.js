@@ -30,7 +30,7 @@ async function main() {
 
   //deploy GrantData
   const GrantData = await ethers.getContractFactory("GrantData");
-  const grantData = await GrantData.deploy();
+  const grantData = await GrantData.deploy(metaverseProxy.address);
   await grantData.deployed();
   console.log("GrantData impl address: ", grantData.address);
 
