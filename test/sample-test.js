@@ -4,9 +4,7 @@ const { ethers } = require("hardhat");
 let proxyAdminAddress, metaverseProxyAddress, grantDataProxyAddress;
 const ipfsHash = "QmV7KjQwkHfLNcZ8hvG8CC1XWrdNRWVcrmVUKkvhsDk5Mx";
 
-const tokenId1 = 2;
-const tokenId2 = 3;
-const tokenId3 = 4;
+const tokenId = 2;
 
 describe("All", () => {
   it("deploy", async () => {
@@ -34,7 +32,7 @@ describe("All", () => {
 
     //deploy GrantData
     const GrantData = await ethers.getContractFactory("GrantData");
-    const grantData = await GrantData.deploy(metaverseProxy.address);
+    const grantData = await GrantData.deploy();
     await grantData.deployed();
     console.log("GrantData impl address: ", grantData.address);
 
@@ -71,44 +69,36 @@ describe("All", () => {
     const GrantData = await ethers.getContractFactory("GrantData");
     const grantData = GrantData.attach(grantDataProxyAddress);
 
-    const [owner, two] = await ethers.getSigners();
+    const [owner] = await ethers.getSigners();
 
-    await grantData.addClaimData(1, [{ user: owner.address, ipfsHash: ipfsHash, tokenId: tokenId1, amount: 1000 }]);
-    await grantData.addClaimData(1, [{ user: two.address, ipfsHash: ipfsHash, tokenId: tokenId2, amount: 1000 }]);
-    await grantData.addBatches();
-    await grantData.addClaimData(2, [{ user: owner.address, ipfsHash: ipfsHash, tokenId: tokenId3, amount: 1000 }]);
+    await grantData.addClaimData(1, [{ user: owner.address, ipfsHash: ipfsHash, tokenId: tokenId, amount: 1000 }]);
 
-    const batches = await grantData.totalBatches();
-    expect(batches.toNumber()).to.eq(2);
+    const batches = await grantData.getBatches();
+    expect(batches[0].toNumber()).to.eq(1);
 
     const claimData = await grantData.getClaimData(1, owner.address);
-    expect(claimData.userData.ipfsHash).to.eq(ipfsHash);
+    expect(claimData.ipfsHash).to.eq(ipfsHash);
     expect(claimData.claim).to.eq(false);
-
-    const claimDatas = await grantData.getClaimDatas(owner.address);
-    expect(claimDatas[0].length).to.eq(2);
   });
 
   it("GrantData claim", async () => {
     const GrantData = await ethers.getContractFactory("GrantData");
     const grantData = GrantData.attach(grantDataProxyAddress);
 
-    const [owner, two] = await ethers.getSigners();
-    await grantData.claims(owner.address);
-
-    await grantData.claim(1, two.address);
+    await grantData.claim(1);
 
     const Metaverse = await ethers.getContractFactory("Metaverse");
     const metaverse = Metaverse.attach(metaverseProxyAddress);
 
+    const [owner] = await ethers.getSigners();
     const balanceOf = await metaverse.balanceOf(owner.address);
-    expect(balanceOf.toNumber()).to.eq(2);
+    expect(balanceOf.toNumber()).to.eq(1);
 
-    const ownerOf = await metaverse.ownerOf(tokenId1);
+    const ownerOf = await metaverse.ownerOf(tokenId);
     expect(ownerOf).to.eq(owner.address);
 
-    const getURI = await metaverse.tokenURI(tokenId1);
-    expect(getURI).to.eq(ipfsHash);
+    const getURI = await metaverse.tokenURI(tokenId);
+    expect(getURI).to.eq("ipfs://" + ipfsHash);
   });
 });
 

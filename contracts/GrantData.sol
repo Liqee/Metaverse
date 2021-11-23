@@ -54,6 +54,7 @@ contract GrantData is OwnableUpgradeable, IGrantData {
         );
         emit Claim(_tokenId, _batch, _user);
     }
+
     function addClaimData(uint256 _bacth, AddClaimData[] memory _datas)
         external
         onlyOwner
@@ -103,7 +104,7 @@ contract GrantData is OwnableUpgradeable, IGrantData {
     function getClaimDatas(address _user)
         public
         view
-        returns (ClaimData[] memory, uint256[] memory)
+        returns (ClaimData[] memory _datas, uint256[] memory _batches)
     {
         uint256 count;
         for (uint256 i = 1; i <= totalBatches; i++) {

@@ -6,11 +6,11 @@
 const { ethers } = require("hardhat");
 
 //kovan
-const proxyAdminAddress = "0xFE099743f0A989aE2b1565520e4f51f995D78E0C"
-const metaverseImplAddress = "0x84748A779fAf5A8E848D22Cc263b354BdBE6381C"
-const metaverseProxyAddress = "0xbb8A4E0e21a2c1979e26e30B8B57A8BB8950a788"
-const grantDataImplAddress = "0x199e09ECeD5e731796B60b42F9772EBCb2774877"
-const grantDataProxyAddress = "0x8332d42ED354Cb6A777008A9B6f12CB7A5aE5fa9"
+const proxyAdminAddress = "0x83A3f9BaE75900bE4aC2263389AE3ED3B10F0b84"
+const metaverseImplAddress = "0xA2c6432cd01C013497d61b336C65F01A7345005D"
+const metaverseProxyAddress = "0xAA9DCc4C1360c7a8c432430262257FB1893e9e43"
+const grantDataImplAddress = "0x2414a258d662a635922DB5e14b9777B1BfD57DCf"
+const grantDataProxyAddress = "0x51204B1c0d6E545fAB85aeAd6568C8083B68B985"
 
 async function main() {
     const GrantData = await ethers.getContractFactory("GrantData");
