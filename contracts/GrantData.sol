@@ -9,77 +9,84 @@ import "./interface/IGrantData.sol";
 contract GrantData is OwnableUpgradeable, IGrantData {
     address public metaverse;
 
-    //batch num => user => ipfs hash
-    mapping(uint256 => mapping(address => ClaimData)) private data;
-
-    uint256 public totalBatch;
-
     mapping(uint256 => bool) private hasBatch;
 
-    uint256[] private batches;
+    // batch num => user => data
+    mapping(uint256 => mapping(address => ClaimData)) private batches;
+
+    //Total batches
+    uint256 public totalBatches;
 
     function initialize(address _metaverse) external initializer {
         metaverse = _metaverse;
+        totalBatches = 1;
         __Ownable_init();
     }
 
-    function getClaimData(uint256 _batch, address _user)
-        public
-        view
-        override
-        returns (ClaimData memory)
+    function claim(uint256 _batch, address _user)
+        external
+        returns (uint256 _tokenId)
     {
-        return data[_batch][_user];
-    }
-
-    function claim(uint256 _batch) external returns (uint256 tokenId) {
         require(hasBatch[_batch], "GrantData: No such batch");
-        require(!data[_batch][msg.sender].claim, "GrantData: Already claim");
+        require(!batches[_batch][_user].claim, "GrantData: Already claim");
+        require(batches[_batch][_user].has, "GrantData: non-existent");
 
-        data[_batch][msg.sender].claim = true;
-        return
-            IMetaverse(metaverse).mint(
-                msg.sender,
-                data[_batch][msg.sender].tokenId,
-                data[_batch][msg.sender].ipfsHash
-            );
+        batches[_batch][_user].claim = true;
+        _tokenId = IMetaverse(metaverse).mint(
+            _user,
+            batches[_batch][_user].userData.tokenId,
+            batches[_batch][_user].userData.ipfsHash
+        );
+        emit Claim(_tokenId, _batch, _user);
     }
 
     function addClaimData(uint256 _bacth, AddClaimData[] memory _datas)
         external
-        override
         onlyOwner
     {
-        addBatch(_bacth);
+        require(
+            _bacth <= totalBatches,
+            "GrantData: The number of batches must be less than next"
+        );
         for (uint256 i = 0; i < _datas.length; i++) {
-            AddClaimData memory _addClaimData = _datas[i];
-            data[_bacth][_addClaimData.user] = ClaimData({
-                ipfsHash: _addClaimData.ipfsHash,
-                tokenId: _addClaimData.tokenId,
-                amount: _addClaimData.amount,
-                claim: false
+            batches[_bacth][_datas[i].user] = ClaimData({
+                userData: _datas[i],
+                claim: false,
+                has: true
             });
         }
+        emit AddClaim(_bacth, _datas.length);
     }
 
-    function getBatches() external view override returns (uint256[] memory) {
-        return batches;
+    function addBatches() external onlyOwner {
+        uint256 _old = totalBatches;
+        totalBatches += 1;
+        emit AddNextId(_old, totalBatches);
     }
 
     function getAmount(uint256 _batch, address _user)
         external
         view
-        override
         returns (uint256)
     {
-        return data[_batch][_user].amount;
+        return batches[_batch][_user].userData.amount;
     }
 
-    function addBatch(uint256 _batch) private {
-        if (!hasBatch[_batch]) {
-            hasBatch[_batch] = true;
-            batches.push(_batch);
-            totalBatch += 1;
-        }
+    function getClaimData(uint256 _batch, address _user)
+        public
+        view
+        returns (ClaimData memory)
+    {
+        return batches[_batch][_user];
     }
+
+    event Claim(
+        uint256 indexed _tokenId,
+        uint256 indexed _batch,
+        address _user
+    );
+
+    event AddClaim(uint256 indexed _batch, uint256 _amount);
+
+    event AddNextId(uint256 _old, uint256 _new);
 }

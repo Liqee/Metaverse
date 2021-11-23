@@ -30,7 +30,7 @@ contract Metaverse is
         require(inWhitelist[msg.sender] != 0, "Metaverse: No permission");
 
         _safeMint(_user, _tokenId);
-        _setTokenURI(_tokenId, string(abi.encodePacked("ipfs://", _uri)));
+        _setTokenURI(_tokenId,  _uri);
         return _tokenId;
     }
 
