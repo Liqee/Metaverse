@@ -13,37 +13,37 @@ async function main() {
   proxyAdminAddress = proxyAdmin.address;
   console.log("ProxyAdmin address: ", proxyAdmin.address);
 
-  //deploy Metaverse
-  const Metaverse = await ethers.getContractFactory("Metaverse");
-  let metaverse = await Metaverse.deploy();
-  await metaverse.deployed();
-  console.log("Metaverse impl address: ", metaverse.address);
+  //deploy Card
+  const Card = await ethers.getContractFactory("Card");
+  let card = await Card.deploy();
+  await card.deployed();
+  console.log("Card impl address: ", card.address);
 
   const Proxy = await ethers.getContractFactory("TransparentUpgradeableProxy");
 
-  //deploy Metaverse proxy
-  const deployMetaverseProxyData = getInitializerData(Metaverse, [], true);
-  const metaverseProxy = await Proxy.deploy(metaverse.address, proxyAdmin.address, deployMetaverseProxyData);
-  await metaverseProxy.deployed();
-  metaverseProxyAddress = metaverseProxy.address;
-  console.log("Metaverse proxy address: ", metaverseProxyAddress);
+  //deploy Card proxy
+  const deployCardProxyData = getInitializerData(Card, [], true);
+  const cardProxy = await Proxy.deploy(card.address, proxyAdmin.address, deployCardProxyData);
+  await cardProxy.deployed();
+  cardProxyAddress = cardProxy.address;
+  console.log("Card proxy address: ", cardProxyAddress);
 
   //deploy GrantData
   const GrantData = await ethers.getContractFactory("GrantData");
-  const grantData = await GrantData.deploy(metaverseProxy.address);
+  const grantData = await GrantData.deploy(cardProxy.address);
   await grantData.deployed();
   console.log("GrantData impl address: ", grantData.address);
 
   //deploy GrantData proxy
-  const deployGrantDataProxyData = getInitializerData(GrantData, [metaverseProxy.address], true);
+  const deployGrantDataProxyData = getInitializerData(GrantData, [cardProxy.address], true);
   const grantDataProxy = await Proxy.deploy(grantData.address, proxyAdmin.address, deployGrantDataProxyData);
   await grantDataProxy.deployed();
   grantDataProxyAddress = grantDataProxy.address;
   console.log("GrantData proxy address: ", grantDataProxyAddress);
 
-  //Set the address of GrantData in Metaverse
-  metaverse = Metaverse.attach(metaverseProxy.address);
-  await metaverse.addWhitelist(grantDataProxy.address);
+  //Set the address of GrantData in Card
+  card = Card.attach(cardProxy.address);
+  await card.addWhitelist(grantDataProxy.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

@@ -4,14 +4,10 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-import "./interface/IMetaverse.sol";
+import "./interface/ICard.sol";
 import "./interface/IGrantData.sol";
 
-contract Metaverse is
-    IMetaverse,
-    OwnableUpgradeable,
-    ERC721URIStorageUpgradeable
-{
+contract Card is ICard, OwnableUpgradeable, ERC721URIStorageUpgradeable {
     address[] public whitelist;
 
     mapping(address => uint256) private inWhitelist;
@@ -30,11 +26,11 @@ contract Metaverse is
         require(inWhitelist[msg.sender] != 0, "Metaverse: No permission");
 
         _safeMint(_user, _tokenId);
-        _setTokenURI(_tokenId,  _uri);
+        _setTokenURI(_tokenId, _uri);
         return _tokenId;
     }
 
-    function addWhitelist(address _address) external {
+    function addWhitelist(address _address) external onlyOwner {
         require(
             inWhitelist[_address] == 0,
             "Metaverse: Mint whitelist already exists"
@@ -43,7 +39,7 @@ contract Metaverse is
         whitelist.push(_address);
     }
 
-    function subWhitelist(address _address) external {
+    function subWhitelist(address _address) external onlyOwner{
         uint256 index = inWhitelist[_address];
         if (index == 0) {
             return;

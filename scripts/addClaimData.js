@@ -7,8 +7,8 @@ const { ethers } = require("hardhat");
 
 //kovan
 const proxyAdminAddress = "0x83A3f9BaE75900bE4aC2263389AE3ED3B10F0b84"
-const metaverseImplAddress = "0xA2c6432cd01C013497d61b336C65F01A7345005D"
-const metaverseProxyAddress = "0xAA9DCc4C1360c7a8c432430262257FB1893e9e43"
+const cardImplAddress = "0xA2c6432cd01C013497d61b336C65F01A7345005D"
+const cardProxyAddress = "0xAA9DCc4C1360c7a8c432430262257FB1893e9e43"
 const grantDataImplAddress = "0x2414a258d662a635922DB5e14b9777B1BfD57DCf"
 const grantDataProxyAddress = "0x51204B1c0d6E545fAB85aeAd6568C8083B68B985"
 
