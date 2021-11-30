@@ -4,6 +4,10 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 const { ethers } = require("hardhat");
+const { keccak256 } = require("ethereumjs-util");
+const { MerkleTree } = require("merkletreejs");
+
+const AbiCoder = ethers.utils.defaultAbiCoder;
 
 async function main() {
   //deploy ProxyAdmin

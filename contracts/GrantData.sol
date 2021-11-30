@@ -1,140 +1,141 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
 
-import "./interface/IMetaverse.sol";
-import "./interface/IGrantData.sol";
+import "./interface/ICard.sol";
 
-contract GrantData is OwnableUpgradeable, IGrantData {
-    address public metaverse;
+contract GrantData is OwnableUpgradeable {
+    mapping(uint256 => bytes32) public merkleRoot;
+    mapping(uint256 => mapping(address => bool)) public claims;
 
-    // batch num => user => data
-    mapping(uint256 => mapping(address => ClaimData)) private batches;
-
-    //Total batches
+    address public card;
     uint256 public totalBatches;
 
-    constructor(address _metaverse) {
-        initialize(_metaverse);
+    event Claim(
+        uint256 indexed _batch,
+        uint256 indexed _tokenId,
+        address _recipient
+    );
+
+    event AddClaim(uint256 indexed _batch, bytes32 _merkleRoot);
+
+    event UpdateMerkleRoot(
+        uint256 indexed _batch,
+        bytes32 _oldMerkleRoot,
+        bytes32 _newMerkleRoot
+    );
+
+    event AddNextId(uint256 _old, uint256 _new);
+
+    constructor(address _card) {
+        initialize(_card);
     }
 
-    function initialize(address _metaverse) public initializer {
-        metaverse = _metaverse;
+    function initialize(address _card) public initializer {
+        card = _card;
         totalBatches = 1;
         __Ownable_init();
     }
 
-    function claim(uint256 _batch, address _user)
-        external
-        returns (uint256 _tokenId)
-    {
-        _tokenId = _claim(_batch, _user);
+    function claim(
+        uint256 _batch,
+        bytes32[] memory _proof,
+        address _recipient,
+        uint256 _tokenId,
+        uint256 _amount,
+        string memory _ipfsHash
+    ) external returns (uint256) {
+        _claim(_batch, _proof, _recipient, _tokenId, _amount, _ipfsHash);
+        return _tokenId;
     }
 
-    function claims(address _user) external {
-        (, uint256[] memory _batches) = getClaimDatas(_user);
-        for (uint256 i = 0; i < _batches.length; i++) {
-            _claim(_batches[i], _user);
-        }
-    }
-
-    function _claim(uint256 _batch, address _user)
-        private
-        returns (uint256 _tokenId)
-    {
-        require(!batches[_batch][_user].claim, "GrantData: Already claim");
-        require(batches[_batch][_user].has, "GrantData: non-existent");
-
-        batches[_batch][_user].claim = true;
-        _tokenId = IMetaverse(metaverse).mint(
-            _user,
-            batches[_batch][_user].userData.tokenId,
-            batches[_batch][_user].userData.ipfsHash
+    function _claim(
+        uint256 _batch,
+        bytes32[] memory _proof,
+        address _recipient,
+        uint256 _amount,
+        uint256 _tokenId,
+        string memory _ipfsHash
+    ) internal {
+        require(
+            !claims[_batch][_recipient],
+            "You have already claimed your rewards."
         );
-        emit Claim(_tokenId, _batch, _user);
+
+        require(
+            _verifyProof(
+                _batch,
+                _proof,
+                _recipient,
+                _amount,
+                _tokenId,
+                _ipfsHash
+            ),
+            "The proof could not be verified."
+        );
+
+        claims[_batch][_recipient] = true;
+        ICard(card).mint(_recipient, _tokenId, _amount, _ipfsHash);
+
+        emit Claim(_batch, _tokenId, _recipient);
     }
 
-    function addClaimData(uint256 _bacth, AddClaimData[] memory _datas)
+    function verifyProof(
+        uint256 _batch,
+        bytes32[] memory _proof,
+        address _recipient,
+        uint256 _amount,
+        uint256 _tokenId,
+        string memory _ipfsHash
+    ) external view returns (bool) {
+        return
+            _verifyProof(
+                _batch,
+                _proof,
+                _recipient,
+                _amount,
+                _tokenId,
+                _ipfsHash
+            );
+    }
+
+    /// @notice Returns whether the recipient can claim
+    function _verifyProof(
+        uint256 _batch,
+        bytes32[] memory _proof,
+        address _recipient,
+        uint256 _amount,
+        uint256 _tokenId,
+        string memory _ipfsHash
+    ) internal view returns (bool) {
+        bytes32 _data = keccak256(
+            abi.encode(_recipient, _amount, _tokenId, _ipfsHash)
+        );
+        return MerkleProofUpgradeable.verify(_proof, merkleRoot[_batch], _data);
+    }
+
+    /** Management function */
+
+    function addClaimData(bytes32 _merkleRoot) external onlyOwner {
+        require(merkleRoot[totalBatches] == bytes32(0));
+        merkleRoot[totalBatches] = _merkleRoot;
+
+        totalBatches += 1;
+        emit AddClaim(totalBatches, _merkleRoot);
+    }
+
+    function updateMerkleRoot(uint256 _batch, bytes32 _merkleRoot)
         external
         onlyOwner
     {
-        require(
-            _bacth <= totalBatches,
-            "GrantData: The number of batches must be less than next"
-        );
-        for (uint256 i = 0; i < _datas.length; i++) {
-            require(
-                !batches[_bacth][_datas[i].user].has,
-                "GrantData: Already added"
-            );
-            // require(!batches[_bacth][_datas[i].user].claim,"GrantData: Already claimed");
+        require(merkleRoot[_batch] != bytes32(0));
 
-            batches[_bacth][_datas[i].user] = ClaimData({
-                userData: _datas[i],
-                claim: false,
-                has: true
-            });
-        }
-        emit AddClaim(_bacth, _datas.length);
+        bytes32 _old = merkleRoot[_batch];
+        merkleRoot[_batch] = _merkleRoot;
+
+        emit UpdateMerkleRoot(_batch, _old, _merkleRoot);
     }
-
-    function addBatches() external onlyOwner {
-        uint256 _old = totalBatches;
-        totalBatches += 1;
-        emit AddNextId(_old, totalBatches);
-    }
-
-    function getAmount(uint256 _batch, address _user)
-        external
-        view
-        returns (uint256)
-    {
-        return batches[_batch][_user].userData.amount;
-    }
-
-    function getClaimData(uint256 _batch, address _user)
-        public
-        view
-        returns (ClaimData memory)
-    {
-        return batches[_batch][_user];
-    }
-
-    function getClaimDatas(address _user)
-        public
-        view
-        returns (ClaimData[] memory _datas, uint256[] memory _batches)
-    {
-        uint256 count;
-        for (uint256 i = 1; i <= totalBatches; i++) {
-            if (batches[i][_user].has) {
-                count++;
-            }
-        }
-
-        ClaimData[] memory a = new ClaimData[](count);
-        //batches array
-        uint256[] memory b = new uint256[](count);
-        uint256 j;
-
-        for (uint256 i = 1; i <= totalBatches; i++) {
-            if (batches[i][_user].has) {
-                a[j] = batches[i][_user];
-                b[j] = i;
-                j++;
-            }
-        }
-        return (a, b);
-    }
-
-    event Claim(
-        uint256 indexed _tokenId,
-        uint256 indexed _batch,
-        address _user
-    );
-
-    event AddClaim(uint256 indexed _batch, uint256 _amount);
-
-    event AddNextId(uint256 _old, uint256 _new);
 }
