@@ -23,9 +23,6 @@ module.exports = {
     kovan: {
       url: `https://eth-kovan.alchemyapi.io/v2/${alchemyKey}`,
       accounts: [`0x${privateKey}`],
-      gas: 8000000,
-      gasPrice: 1000000000, // 1gWei
-      timeout: 200000,
     },
   }
 };
