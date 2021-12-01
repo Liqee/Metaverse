@@ -5,8 +5,6 @@
 // Runtime Environment's members available in the global scope.
 const { ethers } = require("hardhat");
 
-const AbiCoder = ethers.utils.defaultAbiCoder;
-
 async function main() {
   //deploy ProxyAdmin
   const ProxyAdmin = await ethers.getContractFactory("ProxyAdmin");

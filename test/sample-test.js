@@ -5,8 +5,10 @@ const { MerkleTree } = require("merkletreejs");
 
 let proxyAdminAddress, cardProxyAddress, gardManagerProxyAddress;
 const ipfsHash = "QmeTAhxGs1fLXdfCv8MPSnyai9BS6TdtmMnZv58bezsTuz";
+const ipfsHash2 = "QmYvZYxJwq3Ce2d9KT8yAMgGeJUu5LNoLsPmd1ndcUKrGo";
 
 const tokenId = 19;
+const tokenId2 = 20;
 
 const AbiCoder = ethers.utils.defaultAbiCoder;
 
@@ -91,8 +93,10 @@ describe("All", () => {
 
     const claimData = await gardManager.claimed(1, owner.address);
     expect(claimData).to.eq(false);
+
     let getMerkleRoot = await gardManager.merkleRoot(1);
     expect(getMerkleRoot).to.eq(merkleRoot1);
+
     getMerkleRoot = await gardManager.merkleRoot(2);
     expect(getMerkleRoot).to.eq(merkleRoot2);
   });
@@ -110,7 +114,7 @@ describe("All", () => {
     });
   });
 
-  it("CardManager claim", async () => {
+  it("CardManager claim own", async () => {
     const CardManager = await ethers.getContractFactory("CardManager");
     const gardManager = CardManager.attach(gardManagerProxyAddress);
 
@@ -118,12 +122,13 @@ describe("All", () => {
     const leaf = ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [data.address, data.amount, data.tokenId, data.ipfsHash]));
     let proof = tree1.getHexProof(leaf);
 
-    await gardManager.claim(1, proof, data.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
+    const [owner] = await ethers.getSigners();
+
+    await gardManager.claim(1, proof, owner.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
 
     const Card = await ethers.getContractFactory("Card");
     const card = Card.attach(cardProxyAddress);
 
-    const [owner] = await ethers.getSigners();
     const balanceOf = await card.balanceOf(owner.address);
     expect(balanceOf.toNumber()).to.eq(1);
 
@@ -132,6 +137,48 @@ describe("All", () => {
 
     const getURI = await card.tokenURI(tokenId);
     expect(getURI).to.eq(ipfsHash);
+  });
+
+  it("CardManager claim same one again", async () => {
+    const CardManager = await ethers.getContractFactory("CardManager");
+    const gardManager = CardManager.attach(gardManagerProxyAddress);
+
+    const data = testData[0];
+    const leaf = ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [data.address, data.amount, data.tokenId, data.ipfsHash]));
+    let proof = tree1.getHexProof(leaf);
+
+    const [owner] = await ethers.getSigners();
+
+    try {
+      await gardManager.claim(1, proof, owner.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
+    } catch (error) {
+      expect(error).to.exist;
+    }
+  });
+
+  it("CardManager claim on behalf", async () => {
+    const CardManager = await ethers.getContractFactory("CardManager");
+    const gardManager = CardManager.attach(gardManagerProxyAddress);
+
+    const data = testData2[0];
+    const leaf = ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [data.address, data.amount, data.tokenId, data.ipfsHash]));
+    let proof = tree2.getHexProof(leaf);
+
+    const [owner, second] = await ethers.getSigners();
+
+    await gardManager.connect(second).claim(2, proof, owner.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
+
+    const Card = await ethers.getContractFactory("Card");
+    const card = Card.attach(cardProxyAddress);
+
+    const balanceOf = await card.balanceOf(owner.address);
+    expect(balanceOf.toNumber()).to.eq(2);
+
+    const ownerOf = await card.ownerOf(tokenId2);
+    expect(ownerOf).to.eq(owner.address);
+
+    const getURI = await card.tokenURI(tokenId2);
+    expect(getURI).to.eq(ipfsHash2);
   });
 });
 
@@ -158,10 +205,6 @@ function getInitializerData(ImplFactory, args, initializer) {
   }
 }
 
-function bufferFrom0xHexString(hex) {
-  return Buffer.from(hex.replace(/0x/g, ""), "hex");
-}
-
 const testData = [
   { "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "amount": "10000000000000000000000", "tokenId": "19", "ipfsHash": "QmeTAhxGs1fLXdfCv8MPSnyai9BS6TdtmMnZv58bezsTuz" },
   { "address": "0x35137867d87Bf78f8c4340C00872930CBb5f92e0", "amount": "10000000000000000", "tokenId": "1", "ipfsHash": "Qmcfa4gTHGsu4kzFM4nD9TgAhK9QaHUp9LKJEBziGRMh61" },
@@ -183,6 +226,7 @@ const testData = [
 ];
 
 const testData2 = [
+  { "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", "amount": "10000000000000000000000", "tokenId": "20", "ipfsHash": "QmYvZYxJwq3Ce2d9KT8yAMgGeJUu5LNoLsPmd1ndcUKrGo" },
   { "address": "0x09849240026E0131e386f8aA9720E3733AAf5574", "amount": "10000000000000000000000", "tokenId": "14", "ipfsHash": "QmW31NiTWsR7T3jnAuxcC8QSwNB4EKsNwr3AVoQQQ5o3bm" },
-  { "address": "0xad0294eCEa33469e783230B49B8Df53bbc43d908", "amount": "10000000000000000000000", "tokenId": "17", "ipfsHash": "QmYvZYxJwq3Ce2d9KT8yAMgGeJUu5LNoLsPmd1ndcUKrGo" }
+  { "address": "0xad0294eCEa33469e783230B49B8Df53bbc43d908", "amount": "10000000000000000000000", "tokenId": "17", "ipfsHash": "QmYvZYxJwq3Ce2d9KT8yAMgGeJUu5LNoLsPmd1ndcUKrGo" },
 ]
