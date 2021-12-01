@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { keccak256 } = require("ethereumjs-util");
 const { MerkleTree } = require("merkletreejs");
 
-let proxyAdminAddress, cardProxyAddress, grantDataProxyAddress;
+let proxyAdminAddress, cardProxyAddress, gardManagerProxyAddress;
 const ipfsHash = "QmeTAhxGs1fLXdfCv8MPSnyai9BS6TdtmMnZv58bezsTuz";
 
 const tokenId = 19;
@@ -50,32 +50,27 @@ describe("All", () => {
     cardProxyAddress = cardProxy.address;
     console.log("Card proxy address: ", cardProxyAddress);
 
-    //deploy GrantData
-    const GrantData = await ethers.getContractFactory("GrantData");
-    const grantData = await GrantData.deploy(cardProxy.address);
-    await grantData.deployed();
-    console.log("GrantData impl address: ", grantData.address);
+    //deploy CardManager
+    const CardManager = await ethers.getContractFactory("CardManager");
+    const gardManager = await CardManager.deploy(cardProxy.address);
+    await gardManager.deployed();
+    console.log("CardManager impl address: ", gardManager.address);
 
-    //deploy GrantData proxy
-    const deployGrantDataProxyData = getInitializerData(GrantData, [cardProxy.address], true);
-    const grantDataProxy = await Proxy.deploy(grantData.address, proxyAdmin.address, deployGrantDataProxyData);
-    await grantDataProxy.deployed();
-    grantDataProxyAddress = grantDataProxy.address;
-    console.log("GrantData proxy address: ", grantDataProxyAddress);
+    //deploy CardManager proxy
+    const deployCardManagerProxyData = getInitializerData(CardManager, [cardProxy.address], true);
+    const gardManagerProxy = await Proxy.deploy(gardManager.address, proxyAdmin.address, deployCardManagerProxyData);
+    await gardManagerProxy.deployed();
+    gardManagerProxyAddress = gardManagerProxy.address;
+    console.log("CardManager proxy address: ", gardManagerProxyAddress);
 
-    //Set the address of GrantData in Card
+    //Set the address of CardManager in Card
     card = Card.attach(cardProxy.address);
-    await card.addWhitelist(grantDataProxy.address);
+    await card.addMinter(gardManagerProxy.address);
   });
 
   it("Card permission control", async () => {
     const Card = await ethers.getContractFactory("Card");
     const card = Card.attach(cardProxyAddress);
-    try {
-      await card.setGrantData(proxyAdminAddress);
-    } catch (error) {
-      expect(error).to.exist;
-    }
 
     const [owner] = await ethers.getSigners();
     try {
@@ -85,45 +80,45 @@ describe("All", () => {
     }
   });
 
-  it("GrantData addClaimData", async () => {
-    const GrantData = await ethers.getContractFactory("GrantData");
-    const grantData = GrantData.attach(grantDataProxyAddress);
+  it("CardManager addClaimers", async () => {
+    const CardManager = await ethers.getContractFactory("CardManager");
+    const gardManager = CardManager.attach(gardManagerProxyAddress);
 
-    await grantData.addClaimData(merkleRoot1);
-    await grantData.addClaimData(merkleRoot2);
+    await gardManager.addClaimers(merkleRoot1);
+    await gardManager.addClaimers(merkleRoot2);
 
     const [owner] = await ethers.getSigners();
 
-    const claimData = await grantData.claims(1, owner.address);
+    const claimData = await gardManager.claimed(1, owner.address);
     expect(claimData).to.eq(false);
-    let getMerkleRoot = await grantData.merkleRoot(1);
+    let getMerkleRoot = await gardManager.merkleRoot(1);
     expect(getMerkleRoot).to.eq(merkleRoot1);
-    getMerkleRoot = await grantData.merkleRoot(2);
+    getMerkleRoot = await gardManager.merkleRoot(2);
     expect(getMerkleRoot).to.eq(merkleRoot2);
   });
 
   it("should be able to verify proof with valid address", async function () {
-    const GrantData = await ethers.getContractFactory("GrantData");
-    const grantData = GrantData.attach(grantDataProxyAddress);
+    const CardManager = await ethers.getContractFactory("CardManager");
+    const gardManager = CardManager.attach(gardManagerProxyAddress);
 
     testData.forEach(async (data) => {
       const leaf = ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [data.address, data.amount, data.tokenId, data.ipfsHash]));
       let proof = tree1.getHexProof(leaf);
 
-      const valid = await grantData.verifyProof(1, proof, data.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
+      const valid = await gardManager.verifyProof(1, proof, data.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
       expect(valid).to.equal(true);
     });
   });
 
-  it("GrantData claim", async () => {
-    const GrantData = await ethers.getContractFactory("GrantData");
-    const grantData = GrantData.attach(grantDataProxyAddress);
+  it("CardManager claim", async () => {
+    const CardManager = await ethers.getContractFactory("CardManager");
+    const gardManager = CardManager.attach(gardManagerProxyAddress);
 
     const data = testData[0];
     const leaf = ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [data.address, data.amount, data.tokenId, data.ipfsHash]));
     let proof = tree1.getHexProof(leaf);
 
-    await grantData.claim(1, proof, data.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
+    await gardManager.claim(1, proof, data.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
 
     const Card = await ethers.getContractFactory("Card");
     const card = Card.attach(cardProxyAddress);

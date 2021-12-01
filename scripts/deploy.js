@@ -30,22 +30,22 @@ async function main() {
   cardProxyAddress = cardProxy.address;
   console.log("Card proxy address: ", cardProxyAddress);
 
-  //deploy GrantData
-  const GrantData = await ethers.getContractFactory("GrantData");
-  const grantData = await GrantData.deploy(cardProxy.address);
-  await grantData.deployed();
-  console.log("GrantData impl address: ", grantData.address);
+  //deploy CardManager
+  const CardManager = await ethers.getContractFactory("CardManager");
+  const gardManager = await CardManager.deploy(cardProxy.address);
+  await gardManager.deployed();
+  console.log("CardManager impl address: ", gardManager.address);
 
-  //deploy GrantData proxy
-  const deployGrantDataProxyData = getInitializerData(GrantData, [cardProxy.address], true);
-  const grantDataProxy = await Proxy.deploy(grantData.address, proxyAdmin.address, deployGrantDataProxyData);
-  await grantDataProxy.deployed();
-  grantDataProxyAddress = grantDataProxy.address;
-  console.log("GrantData proxy address: ", grantDataProxyAddress);
+  //deploy CardManager proxy
+  const deployCardManagerProxyData = getInitializerData(CardManager, [cardProxy.address], true);
+  const gardManagerProxy = await Proxy.deploy(gardManager.address, proxyAdmin.address, deployCardManagerProxyData);
+  await gardManagerProxy.deployed();
+  gardManagerProxyAddress = gardManagerProxy.address;
+  console.log("CardManager proxy address: ", gardManagerProxyAddress);
 
-  //Set the address of GrantData in Card
+  //Set the address of CardManager in Card
   card = Card.attach(cardProxy.address);
-  await card.addWhitelist(grantDataProxy.address);
+  await card.addMinter(gardManagerProxy.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

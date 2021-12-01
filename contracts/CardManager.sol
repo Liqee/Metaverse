@@ -7,28 +7,26 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgrad
 
 import "./interface/ICard.sol";
 
-contract GrantData is OwnableUpgradeable {
+contract CardManager is OwnableUpgradeable {
     mapping(uint256 => bytes32) public merkleRoot;
-    mapping(uint256 => mapping(address => bool)) public claims;
+    mapping(uint256 => mapping(address => bool)) public claimed;
 
     address public card;
-    uint256 public totalBatches;
+    uint256 public totalRounds;
 
     event Claim(
-        uint256 indexed _batch,
+        uint256 indexed _roundID,
         uint256 indexed _tokenId,
         address _recipient
     );
 
-    event AddClaim(uint256 indexed _batch, bytes32 _merkleRoot);
+    event AddClaimers(uint256 indexed _roundID, bytes32 _merkleRoot);
 
     event UpdateMerkleRoot(
-        uint256 indexed _batch,
+        uint256 indexed _roundID,
         bytes32 _oldMerkleRoot,
         bytes32 _newMerkleRoot
     );
-
-    event AddNextId(uint256 _old, uint256 _new);
 
     constructor(address _card) {
         initialize(_card);
@@ -36,24 +34,24 @@ contract GrantData is OwnableUpgradeable {
 
     function initialize(address _card) public initializer {
         card = _card;
-        totalBatches = 1;
+        totalRounds = 1;
         __Ownable_init();
     }
 
     function claim(
-        uint256 _batch,
+        uint256 _roundID,
         bytes32[] memory _proof,
         address _recipient,
         uint256 _tokenId,
         uint256 _amount,
         string memory _ipfsHash
     ) external returns (uint256) {
-        _claim(_batch, _proof, _recipient, _tokenId, _amount, _ipfsHash);
+        _claim(_roundID, _proof, _recipient, _tokenId, _amount, _ipfsHash);
         return _tokenId;
     }
 
     function _claim(
-        uint256 _batch,
+        uint256 _roundID,
         bytes32[] memory _proof,
         address _recipient,
         uint256 _amount,
@@ -61,13 +59,13 @@ contract GrantData is OwnableUpgradeable {
         string memory _ipfsHash
     ) internal {
         require(
-            !claims[_batch][_recipient],
+            !claimed[_roundID][_recipient],
             "You have already claimed your rewards."
         );
 
         require(
             _verifyProof(
-                _batch,
+                _roundID,
                 _proof,
                 _recipient,
                 _amount,
@@ -77,14 +75,14 @@ contract GrantData is OwnableUpgradeable {
             "The proof could not be verified."
         );
 
-        claims[_batch][_recipient] = true;
+        claimed[_roundID][_recipient] = true;
         ICard(card).mint(_recipient, _tokenId, _amount, _ipfsHash);
 
-        emit Claim(_batch, _tokenId, _recipient);
+        emit Claim(_roundID, _tokenId, _recipient);
     }
 
     function verifyProof(
-        uint256 _batch,
+        uint256 _roundID,
         bytes32[] memory _proof,
         address _recipient,
         uint256 _amount,
@@ -93,7 +91,7 @@ contract GrantData is OwnableUpgradeable {
     ) external view returns (bool) {
         return
             _verifyProof(
-                _batch,
+                _roundID,
                 _proof,
                 _recipient,
                 _amount,
@@ -104,7 +102,7 @@ contract GrantData is OwnableUpgradeable {
 
     /// @notice Returns whether the recipient can claim
     function _verifyProof(
-        uint256 _batch,
+        uint256 _roundID,
         bytes32[] memory _proof,
         address _recipient,
         uint256 _amount,
@@ -114,28 +112,28 @@ contract GrantData is OwnableUpgradeable {
         bytes32 _data = keccak256(
             abi.encode(_recipient, _amount, _tokenId, _ipfsHash)
         );
-        return MerkleProofUpgradeable.verify(_proof, merkleRoot[_batch], _data);
+        return MerkleProofUpgradeable.verify(_proof, merkleRoot[_roundID], _data);
     }
 
     /** Management function */
 
-    function addClaimData(bytes32 _merkleRoot) external onlyOwner {
-        require(merkleRoot[totalBatches] == bytes32(0));
-        merkleRoot[totalBatches] = _merkleRoot;
+    function addClaimers(bytes32 _merkleRoot) external onlyOwner {
+        require(merkleRoot[totalRounds] == bytes32(0));
+        merkleRoot[totalRounds] = _merkleRoot;
 
-        totalBatches += 1;
-        emit AddClaim(totalBatches, _merkleRoot);
+        totalRounds += 1;
+        emit AddClaimers(totalRounds, _merkleRoot);
     }
 
-    function updateMerkleRoot(uint256 _batch, bytes32 _merkleRoot)
+    function updateMerkleRoot(uint256 _roundID, bytes32 _merkleRoot)
         external
         onlyOwner
     {
-        require(merkleRoot[_batch] != bytes32(0));
+        require(merkleRoot[_roundID] != bytes32(0));
 
-        bytes32 _old = merkleRoot[_batch];
-        merkleRoot[_batch] = _merkleRoot;
+        bytes32 _old = merkleRoot[_roundID];
+        merkleRoot[_roundID] = _merkleRoot;
 
-        emit UpdateMerkleRoot(_batch, _old, _merkleRoot);
+        emit UpdateMerkleRoot(_roundID, _old, _merkleRoot);
     }
 }

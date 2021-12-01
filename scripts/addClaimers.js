@@ -4,29 +4,33 @@
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
 const { ethers } = require("hardhat");
+const { keccak256 } = require("ethereumjs-util");
+const { MerkleTree } = require("merkletreejs");
 
 //kovan
-const proxyAdminAddress = "0x88df649C33e1De6c62B6314b3c8535D58969EbC0"
-const cardImplAddress = "0xb5A382FE8dC1Dbe58Ef0399c2632A8B434748DF5"
-const cardProxyAddress = "0x122E08EbB58aB869033757D5d754228FBB9e1192"
-const grantDataImplAddress = "0xe4F429e92f7c22C6AE035A0f7cB65444b15a6527"
-const grantDataProxyAddress = "0xf0bbFaf2f7429cB18d4462F81C39c596210f7718"
+const proxyAdminAddress = "0xCC8278F065222f437a22b2645F524A632d30F835"
+const cardImplAddress = "0x15a00377C8aC46Ca8D1B50558BfF639663D74d9f"
+const cardProxyAddress = "0x11A6e1209EE68D7C3622bB5dC90792E77339B281"
+const gardManagerImplAddress = "0x3DbdABA78063920382017d5F455422876C93b41F"
+const gardManagerProxyAddress = "0x5081Ca4448ad4E73eBACF56d662ccB5363a58b2b"
+
+const AbiCoder = ethers.utils.defaultAbiCoder;
 
 async function main() {
-    const GrantData = await ethers.getContractFactory("GrantData");
-    const grantData = GrantData.attach(grantDataProxyAddress);
+    const CardManager = await ethers.getContractFactory("CardManager");
+    const gardManager = CardManager.attach(gardManagerProxyAddress);
 
     let leaves = testData.map((x) => ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [x.address, x.amount, x.tokenId, x.ipfsHash])));
     let tree = new MerkleTree(leaves, keccak256, { sort: true });
     let merkleRoot = tree.getHexRoot();
 
-    await grantData.addClaimData(merkleRoot);
+    await gardManager.addClaimers(merkleRoot);
 
     leaves = testData2.map((x) => ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [x.address, x.amount, x.tokenId, x.ipfsHash])));
     tree = new MerkleTree(leaves, keccak256, { sort: true });
     merkleRoot = tree.getHexRoot();
 
-    await grantData.addClaimData(merkleRoot);
+    await gardManager.addClaimers(merkleRoot);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

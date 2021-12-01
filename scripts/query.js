@@ -6,17 +6,17 @@
 const { ethers } = require("hardhat");
 
 //kovan
-const proxyAdminAddress = "0xC439647f8395a7724BBB0886047243Bc85a19D6F"
-const cardImplAddress = "0xDBCE5AaD26062c3303259d102f57c2cbe2F6B88E"
-const cardProxyAddress = "0xA0C2098980d8354C4D89832E35EF00dE6Cd7b86F"
-const grantDataImplAddress = "0xadecb9A41BB560C74C8d4E2C1410e854584ea342"
-const grantDataProxyAddress = "0x4D90dd6Bbd4dc8cA268747D0D18ca399e0C620c6"
+const proxyAdminAddress = "0xCC8278F065222f437a22b2645F524A632d30F835"
+const cardImplAddress = "0x15a00377C8aC46Ca8D1B50558BfF639663D74d9f"
+const cardProxyAddress = "0x11A6e1209EE68D7C3622bB5dC90792E77339B281"
+const gardManagerImplAddress = "0x3DbdABA78063920382017d5F455422876C93b41F"
+const gardManagerProxyAddress = "0x5081Ca4448ad4E73eBACF56d662ccB5363a58b2b"
 
 async function main() {
-    const GrantData = await ethers.getContractFactory("GrantData");
-    const grantData = GrantData.attach(grantDataProxyAddress);
+    const CardManager = await ethers.getContractFactory("CardManager");
+    const cardManager = CardManager.attach(gardManagerProxyAddress);
 
-    const batchs = await grantData.getClaimData(1, "0xFb9C88214bC0AB089fdC387342eFf3ebE61FC23d");
+    const batchs = await cardManager.merkleRoot(1);
     console.log(batchs);
 
 }
