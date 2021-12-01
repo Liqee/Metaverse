@@ -15,15 +15,15 @@ contract CardManager is OwnableUpgradeable {
     uint256 public totalRounds;
 
     event Claim(
-        uint256 indexed _roundID,
+        uint256 indexed _roundId,
         uint256 indexed _tokenId,
         address _recipient
     );
 
-    event AddClaimers(uint256 indexed _roundID, bytes32 _merkleRoot);
+    event AddClaimers(uint256 indexed _roundId, bytes32 _merkleRoot);
 
     event UpdateMerkleRoot(
-        uint256 indexed _roundID,
+        uint256 indexed _roundId,
         bytes32 _oldMerkleRoot,
         bytes32 _newMerkleRoot
     );
@@ -39,19 +39,19 @@ contract CardManager is OwnableUpgradeable {
     }
 
     function claim(
-        uint256 _roundID,
+        uint256 _roundId,
         bytes32[] memory _proof,
         address _recipient,
         uint256 _tokenId,
         uint256 _amount,
         string memory _ipfsHash
     ) external returns (uint256) {
-        _claim(_roundID, _proof, _recipient, _tokenId, _amount, _ipfsHash);
+        _claim(_roundId, _proof, _recipient, _tokenId, _amount, _ipfsHash);
         return _tokenId;
     }
 
     function _claim(
-        uint256 _roundID,
+        uint256 _roundId,
         bytes32[] memory _proof,
         address _recipient,
         uint256 _amount,
@@ -59,13 +59,13 @@ contract CardManager is OwnableUpgradeable {
         string memory _ipfsHash
     ) internal {
         require(
-            !claimed[_roundID][_recipient],
+            !claimed[_roundId][_recipient],
             "You have already claimed your rewards."
         );
 
         require(
             _verifyProof(
-                _roundID,
+                _roundId,
                 _proof,
                 _recipient,
                 _amount,
@@ -75,14 +75,14 @@ contract CardManager is OwnableUpgradeable {
             "The proof could not be verified."
         );
 
-        claimed[_roundID][_recipient] = true;
+        claimed[_roundId][_recipient] = true;
         ICard(card).mint(_recipient, _tokenId, _amount, _ipfsHash);
 
-        emit Claim(_roundID, _tokenId, _recipient);
+        emit Claim(_roundId, _tokenId, _recipient);
     }
 
     function verifyProof(
-        uint256 _roundID,
+        uint256 _roundId,
         bytes32[] memory _proof,
         address _recipient,
         uint256 _amount,
@@ -91,7 +91,7 @@ contract CardManager is OwnableUpgradeable {
     ) external view returns (bool) {
         return
             _verifyProof(
-                _roundID,
+                _roundId,
                 _proof,
                 _recipient,
                 _amount,
@@ -102,7 +102,7 @@ contract CardManager is OwnableUpgradeable {
 
     /// @notice Returns whether the recipient can claim
     function _verifyProof(
-        uint256 _roundID,
+        uint256 _roundId,
         bytes32[] memory _proof,
         address _recipient,
         uint256 _amount,
@@ -112,7 +112,7 @@ contract CardManager is OwnableUpgradeable {
         bytes32 _data = keccak256(
             abi.encode(_recipient, _amount, _tokenId, _ipfsHash)
         );
-        return MerkleProofUpgradeable.verify(_proof, merkleRoot[_roundID], _data);
+        return MerkleProofUpgradeable.verify(_proof, merkleRoot[_roundId], _data);
     }
 
     /** Management function */
@@ -125,15 +125,15 @@ contract CardManager is OwnableUpgradeable {
         emit AddClaimers(totalRounds, _merkleRoot);
     }
 
-    function updateMerkleRoot(uint256 _roundID, bytes32 _merkleRoot)
+    function updateMerkleRoot(uint256 _roundId, bytes32 _merkleRoot)
         external
         onlyOwner
     {
-        require(merkleRoot[_roundID] != bytes32(0));
+        require(merkleRoot[_roundId] != bytes32(0));
 
-        bytes32 _old = merkleRoot[_roundID];
-        merkleRoot[_roundID] = _merkleRoot;
+        bytes32 _old = merkleRoot[_roundId];
+        merkleRoot[_roundId] = _merkleRoot;
 
-        emit UpdateMerkleRoot(_roundID, _old, _merkleRoot);
+        emit UpdateMerkleRoot(_roundId, _old, _merkleRoot);
     }
 }
