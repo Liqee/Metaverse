@@ -1,26 +1,53 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// When running the script with `npx hardhat run <script>` you'll find the Hardhat
-// Runtime Environment's members available in the global scope.
-const { ethers } = require("hardhat");
 const { expect } = require("chai");
+const { ethers } = require("hardhat");
 const { keccak256 } = require("ethereumjs-util");
 const { MerkleTree } = require("merkletreejs");
 
 const AbiCoder = ethers.utils.defaultAbiCoder;
 
-//kovan
-const proxyAdminAddress = "0xCC8278F065222f437a22b2645F524A632d30F835"
-const cardImplAddress = "0x15a00377C8aC46Ca8D1B50558BfF639663D74d9f"
-const cardProxyAddress = "0x11A6e1209EE68D7C3622bB5dC90792E77339B281"
-const gardManagerImplAddress = "0x3DbdABA78063920382017d5F455422876C93b41F"
-const gardManagerProxyAddress = "0x5081Ca4448ad4E73eBACF56d662ccB5363a58b2b"
+describe("All", () => {
+    let leaves;
+    let tree1;
+    let tree2;
+    let merkleRoot1;
+    let merkleRoot2;
 
-//bsc mainnet
-const bsc_gardManagerProxyAddres = "0x85D7F65290fE0162627E23650c9545841729c0d2"
-//eth mainnet
-const eth_gardManagerProxyAddres = "0x85D7F65290fE0162627E23650c9545841729c0d2"
+    it("deploy", async () => {
+        leaves = bscData.map((x) => ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [x.address, x.amount, x.tokenId, x.ipfsHash])));
+        tree1 = new MerkleTree(leaves, keccak256, { sort: true });
+        merkleRoot1 = tree1.getHexRoot();
+        console.log("bsc merkleRoot: ", merkleRoot1);
+
+        leaves = ethData.map((x) => ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [x.address, x.amount, x.tokenId, x.ipfsHash])));
+        tree2 = new MerkleTree(leaves, keccak256, { sort: true });
+        merkleRoot2 = tree2.getHexRoot();
+        console.log("eth merkleRoot: ", merkleRoot2);
+    });
+
+});
+
+
+function getInitializerData(ImplFactory, args, initializer) {
+    if (initializer === false) {
+        return "0x";
+    } else {
+        initializer = "initialize";
+    }
+
+    const allowNoInitialization = initializer === undefined && args.length === 0;
+
+    try {
+        const fragment = ImplFactory.interface.getFunction(initializer);
+        return ImplFactory.interface.encodeFunctionData(fragment, args);
+    } catch (e) {
+        if (e instanceof Error) {
+            if (allowNoInitialization && e.message.includes("no matching function")) {
+                return "0x";
+            }
+        }
+        throw e;
+    }
+}
 
 const bscData = [
     { "amount": "384052370600000000000000", "address": "0x5c3b6565C9bb87E740C155E92c34318B706c6126", "tokenId": "1", "ipfsHash": "QmRRdRpa78Ldneeo5BcehwrAzXDmDN1Q48UsqUpazTRb5w" },
@@ -62,7 +89,7 @@ const bscData = [
     { "amount": "127933000000000000000", "address": "0x8B129D184B11ac30205E1Dc3866a181649Efde64", "tokenId": "37", "ipfsHash": "QmaWTFujLP3AKw54vtz9gzd5u4VjUkEt57G3mqdBBA4Nco" },
     { "amount": "115018800000000000000", "address": "0xa66390425De1f7cfBA1BA4fE12ce8d7D573674b3", "tokenId": "38", "ipfsHash": "Qmd6RQK5zvzLEVee1vLEbRzL1MZbEssikhYd7rKfPv2k79" },
     { "amount": "110614200000000000000", "address": "0x6d69A22e26D30dd05d637dADf411d9cd6581F93d", "tokenId": "39", "ipfsHash": "QmQzZ4nQqbrU4gRFrbDfHX8CvbxuuetCYU4kTujzEpYGmY" }
-];
+]
 
 const ethData = [
     { "amount": "312170877000000000000000", "address": "0x5997BafF274ea7ade9314Be8044D1Af9a274B121", "tokenId": "1", "ipfsHash": "QmTd4H8gNCZARD5ZsRDgxim7tazLT9pkNBE51EsSimPVqw" },
@@ -83,54 +110,3 @@ const ethData = [
     { "amount": "577561000000000000000", "address": "0xEe8aB75f6E1d5247AD7aBC7B8e8F0Fbc6A45D533", "tokenId": "16", "ipfsHash": "QmTytWfW6vgpH5D2HfHJJGvYyKY7B2VCKJgMczQZudskoh" },
     { "amount": "450543900000000000000", "address": "0x01e68EA97aE3136DB56fB22CD0AC44f51c6A27C8", "tokenId": "17", "ipfsHash": "QmPEQfxNiRz1FfbfWqeppUcBNCrj8xQJuZZiLj1uknPekr" }
 ]
-
-let leaves;
-let tree1;
-let merkleRoot1;
-
-async function main() {
-    leaves = bscData.map((x) => ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [x.address, x.amount, x.tokenId, x.ipfsHash])));
-    tree1 = new MerkleTree(leaves, keccak256, { sort: true });
-    merkleRoot1 = tree1.getHexRoot();
-
-    const CardManager = await ethers.getContractFactory("CardManager");
-    const cardManager = CardManager.attach(bsc_gardManagerProxyAddres);
-
-    await Promise.all(bscData.map(async (data) => {
-        const leaf = ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [data.address, data.amount, data.tokenId, data.ipfsHash]));
-        let proof = tree1.getHexProof(leaf);
-
-        const valid = await cardManager.verifyProof(1, proof, data.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
-        const valid2 = await cardManager.claimed(1, data.address);
-        console.log("verifyProof: ", valid, ", claimed: ", valid2, ", address: ", data.address);
-        // expect(valid).to.equal(true);
-    }));
-}
-
-async function main2() {
-    leaves = ethData.map((x) => ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [x.address, x.amount, x.tokenId, x.ipfsHash])));
-    tree1 = new MerkleTree(leaves, keccak256, { sort: true });
-    merkleRoot1 = tree1.getHexRoot();
-
-    const CardManager = await ethers.getContractFactory("CardManager");
-    const cardManager = CardManager.attach(eth_gardManagerProxyAddres);
-
-    await Promise.all(ethData.map(async (data) => {
-        const leaf = ethers.utils.keccak256(AbiCoder.encode(["address", "uint", "uint", "string"], [data.address, data.amount, data.tokenId, data.ipfsHash]));
-        let proof = tree1.getHexProof(leaf);
-
-        const valid = await cardManager.verifyProof(1, proof, data.address, ethers.BigNumber.from(data.amount), ethers.BigNumber.from(data.tokenId), data.ipfsHash);
-        const valid2 = await cardManager.claimed(1, data.address);
-        console.log("verifyProof: ", valid, ", claimed: ", valid2, ", address: ", data.address);
-        // expect(valid).to.equal(true);
-    }));
-}
-
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main2()
-    .then(() => process.exit(0))
-    .catch((error) => {
-        console.error(error);
-        process.exit(1);
-    });
